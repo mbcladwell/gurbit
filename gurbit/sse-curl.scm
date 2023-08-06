@@ -1,33 +1,22 @@
-;;; sse-curl.el --- Code for getting SSEs with curl -*- lexical-binding: t -*-
+(define-module (gurbit sse-curl)
 
-;; Author: Noah Evans <noah@nevans.me>
+;#:use-module (request)
+;#:use-module (aio)
+;#:use-module (sse)
+;#:use-module (cl-macs)
+;#:use-module (urbit-log)
+;;#:use-module (gurbit sse-curl)
 
-;; This file is not part of GNU Emacs
-
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
+ ; #:export ()
+  
+)
 
 
-;;; Commentary:
-
-;; Somewhat based off of elfeed-curl.el
-
-;;; Code:
 
 (define sse-curl-program-name "curl"
   "Name of the executable sse-curl uses.")
 
-(define-local sse-curl--callback #f
+(define sse-curl--callback #f
   "Callback function for when curl dissconnects")
 
 (define sse-curl--args (url &optional cookie extra-args)
@@ -64,6 +53,3 @@ We should reconnect unless given status 204."
       (set-process-query-on-exit-flag process #f)
       (setf (process-sentinel process) #'sse-curl--sentinel))))
 
-(provide 'sse-curl)
-
-;;; sse-curl.el ends here

@@ -1,35 +1,14 @@
-;; urbit-http.el --- Urbit http library -*- lexical-binding: t; -*-
+(define-module (gurbit urbit-http)
 
-;; Author: Noah Evans <noah@nevans.me>
+;#:use-module (request)
+;#:use-module (aio)
+;#:use-module (sse)
+;#:use-module (cl-macs)
+;#:use-module (urbit-log)
+;#:use-module (urbit-helper)
 
-;; This file is not part of GNU Emacs
-
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
-
-;;; Commentary:
-
-;; Code for interacting with an urbit ship over http.
-
-;;; Code:
-
-(use-module 'request)
-(use-module 'aio)
-(use-module 'sse)
-(use-module 'cl-macs)
-(use-module 'urbit-log)
-(use-module 'urbit-helper)
-
+ 
+)
 
 ;;
 ;; Variables
@@ -69,41 +48,42 @@ Should be set to the current unix time plus a 6 digit random hex string.")
   "Alist of subscription ids to handler functions.")
 
 
-
-(define urbit-http--random-hex-string (n)
+(define (urbit-http--random-hex-string n)
   "Generate a random N digit hexadecimal string."
-  (format "%x" (random (expt 16 n))))
+  (format #t "~x" (random (expt 16 n))))
 
-(define urbit-http--event-id ()
+
+(define (urbit-http--event-id)
   "Get id for next event."
   (set! urbit-http--last-event-id (+ urbit-http--last-event-id 1)))
 
-(define urbit-http-init (url code)
+
+(define (urbit-http-init url code)
   "Initialize urbit-http with URL and CODE."
   (set! urbit-http--url url)
   (set! urbit-http--code code)
-  (set! urbit-http--uid (concat (format-time-string "%s")
+  (set! urbit-http--uid (string-append (number->string (current-time))
                                 "-"
                                 (urbit-http--random-hex-string 6)))
   (set! urbit-http--request-cookie-jar #f)
   (set! urbit-http--last-event-id 0)
   (set! urbit-http--poke-handlers #f)
   (set! urbit-http--subscription-handlers #f)
-  (set! urbit-http--channel-url (concat urbit-http--url "/~/channel/" urbit-http--uid)))
+  (set! urbit-http--channel-url (string-append urbit-http--url "/~/channel/" urbit-http--uid)))
 
-(define urbit-http-get-cookie (cookie-jar)
-  "Get the urbauth cookie from curl COOKIE-JAR."
-  (with-temp-buffer
-    (insert-file-contents cookie-jar)
-    (search-forward "urbauth")
-    (backward-word)
-    (let ((cookie (buffer-substring (point) (line-end-position))))
-      (replace-regexp-in-string "\t" "=" cookie))))
+;; (define (urbit-http-get-cookie cookie-jar)
+;;   "Get the urbauth cookie from curl COOKIE-JAR."
+;;   (with-temp-buffer
+;;     (insert-file-contents cookie-jar)
+;;     (search-forward "urbauth")
+;;     (backward-word)
+;;     (let ((cookie (buffer-substring (point) (line-end-position))))
+;;       (replace-regexp-in-string "\t" "=" cookie))))
 
 (define urbit-http-connect ()
   "Connect to ship described by `urbit-http--url' and `urbit--code'.
 Return a promise resolving to either '(ok) or '(err)"
-  (set! urbit-http--request-cookie-jar (make-temp-file "urbit-request-cookie-jar-"))
+  (set! urbit-http--request-cookie-jar (tmpnam))
   (let* ((p (aio-make-callback :once t))
          (callback (car p))
          (promise (cdr p))
